@@ -1,0 +1,63 @@
+format = """
+$directory($rust$package$golang$python$ruby$git_branch$git_status$git_state$status)$cmd_duration$character
+"""
+scan_timeout = 10
+add_newline = false
+
+[cmd_duration]
+min_time = 500
+format = "( 🐌 [$duration](bold yellow))"
+
+[directory]
+truncation_length = 15
+truncation_symbol = "../"
+format="[$path]($style)( [$read_only]($read_only_style))"
+read_only="🔒"
+truncate_to_repo=true
+
+[character]
+success_symbol = " [❯](bold green)"
+
+[git_branch]
+symbol = " "
+format = " [$symbol$branch]($style)"
+
+[git_status]
+format = '( [\[$all_status$ahead_behind\]]($style))'
+conflicted="⚔️ "
+diverged = "🧨 ⇡${ahead_count} ⇣${behind_count}"
+ahead = "⇡${count}"
+behind = "⇣${count}"
+staged = "+"
+modified = "*"
+
+[git_state]
+format = '[\($state( $progress_current/$progress_total)\)]($style)'
+cherry_pick = "[🍒](bold red)"
+rebase= "📚"
+merge = "🤝"
+
+[status]
+symbol =  ""
+format = '( 🤦[$symbol$status ]($style))'
+disabled = false
+
+[package]
+format = "( [$version](208 bold))"
+
+[golang]
+symbol = ""
+format = " [$symbol]($style)"
+
+[python]
+symbol = "🐍"
+format='[${symbol}${pyenv_prefix}( \($virtualenv\))]($style)'
+
+[ruby]
+symbol = "💎"
+format = "[$symbol]($style) "
+
+[rust]
+symbol="🦀"
+format = " [$symbol](red bold)"
+
