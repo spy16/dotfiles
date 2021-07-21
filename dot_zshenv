@@ -1,0 +1,49 @@
+set editing-mode vi
+
+# ================== aliases ===================
+alias vim="nvim"
+alias git-personal="git config --local user.name Shivaprasad; git config --local user.email shiv.ylp@gmail.com"
+alias git-work="git config --local user.name Shivaprasad; git config --local user.email shivaprasad.bhat@go-jek.com"
+
+# general aliases
+alias compose="docker-compose"
+alias kc="kubectl"
+alias kt="kubetail"
+alias kx="kubectx"
+alias vim="nvim"
+alias em="emacsclient -c -t"
+alias py="python3"
+alias ipy="ipython"
+alias gs='gitin status'
+alias emu='emacsclient -c --no-wait'
+
+# ================== exports ===================
+export SSH_KEY_PATH=~/.ssh/rsa_id
+
+export GOPATH=~/Installed/go
+export GOBIN=$GOPATH/bin
+
+export JAVA_HOME=/usr/local/opt/openjdk
+export LEIN_USE_BOOTCLASSPATH=no
+
+export PATH=$PATH:$GOPATH/bin
+export PATH=$PATH:~/Installed/google-cloud-sdk/bin
+export PATH=$PATH:/usr/local/Cellar/helm@2/2.16.12/bin/
+
+# Preferred editor for local and remote sessions
+if [[ -n $SSH_CONNECTION ]]; then
+  export EDITOR='nvim'
+else
+  export EDITOR='vim'
+fi
+
+# ---------------------- Miscallaneous -------------------------
+function join_by { local IFS=","; echo "$*"; }
+
+function kw
+{
+  tags=$(curl http://knightswatch.golabs.io/v1/configurations/$1/latest/all 2> /dev/null | jq '.data | keys[]' -r | sort  | fzf -m --height 10)
+  tags=$(join_by  $tags)
+  curl http://knightswatch.golabs.io/v1/configurations/$1/latest\?q\=${tags} 2> /dev/null | jq '.data'
+}
+
