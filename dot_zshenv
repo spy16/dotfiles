@@ -3,19 +3,27 @@ set editing-mode vi
 # ================== aliases ===================
 alias vim="nvim"
 alias git-personal="git config --local user.name Shivaprasad; git config --local user.email shiv.ylp@gmail.com"
-alias git-work="git config --local user.name Shivaprasad; git config --local user.email shivaprasad.bhat@go-jek.com"
+alias git-work="git config --local user.name Shivaprasad; git config --local user.email shiva@aaritya.com"
 
 # general aliases
-alias compose="docker-compose"
 alias kc="kubectl"
 alias kt="kubetail"
 alias kx="kubectx"
 alias vim="nvim"
-alias em="emacsclient -c -t"
 alias py="python3"
 alias ipy="ipython"
-alias gs='gitin status'
-alias emu='emacsclient -c --no-wait'
+
+alias dc="docker compose"
+alias dcps='docker compose ps'
+alias dcup='docker compose up'
+alias dclogs='docker compose logs -f'
+alias dcstop='docker compose stop'
+alias dcdown='docker compose down'
+alias dcexec='docker compose exec'
+
+alias yarn='echo "Did you mean pnpm?"'
+alias pn='pnpm'
+alias px='pnpx'
 
 # ================== exports ===================
 export SSH_KEY_PATH=~/.ssh/rsa_id
