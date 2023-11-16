@@ -60,4 +60,3 @@ format = "[$symbol]($style) "
 [rust]
 symbol="🦀"
 format = " [$symbol](red bold)"
-
