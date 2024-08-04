@@ -12,10 +12,18 @@ vim.opt.signcolumn = "yes"
 vim.opt.number = true
 vim.opt.mouse = "a"
 vim.opt.ignorecase = true
+vim.opt.incsearch = true
 vim.opt.smartcase = true
 vim.opt.hlsearch = true
 vim.opt.wrap = true
+vim.opt.backup = false
+vim.opt.termguicolors = false
+vim.opt.swapfile = false
+vim.opt.smarttab = true
+vim.opt.smartindent = true
+vim.opt.autoindent = true
 vim.opt.breakindent = true
+vim.opt.linebreak = true
 vim.opt.tabstop = 2
 vim.opt.shiftwidth = 2
 vim.opt.expandtab = true
@@ -23,11 +31,65 @@ vim.opt.showmode = true
 vim.opt.clipboard = "unnamedplus" -- Use system clipboard
 vim.opt.splitright = true
 vim.opt.splitbelow = true
-vim.opt.list = true
+vim.opt.list = false
 vim.opt.listchars = { tab = "» ", trail = "·", nbsp = "␣" }
 vim.opt.inccommand = "split"
 vim.opt.cursorline = true
 vim.opt.scrolloff = 10
+vim.opt.shell = "/bin/zsh"
+
+--* Neovim settings *--
+vim.opt.cmdheight = 0 --* Truly disable statusline (even in splits) *--
+vim.opt.laststatus = 0
+vim.opt.statusline = '%{repeat("─",winwidth("."))}'
+vim.cmd("highlight! link StatusLine Normal")
+vim.cmd("highlight! link StatusLineNC Normal")
+
+vim.api.nvim_set_keymap("i", "<C-k>", "<Up>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("i", "<C-l>", "<Right>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("i", "<C-j>", "<Down>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("i", "<C-h>", "<Left>", { noremap = true, silent = true })
+
+vim.api.nvim_set_keymap("n", "<Up>", "<nop>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Up>", "<nop>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Down>", "<nop>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Left>", "<nop>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<Right>", "<nop>", { noremap = true, silent = true })
+
+if vim.g.neovide then
+	-- Helper function for transparency formatting
+	vim.g.neovide_window_blurred = true
+	vim.g.neovide_scroll_animation_far_lines = 1
+	vim.g.neovide_cursor_animation_length = 0.01
+	vim.g.neovide_cursor_animate_in_insert_mode = false
+	vim.g.neovide_cursor_animate_command_line = false
+
+	vim.g.neovide_padding_top = 0
+	vim.g.neovide_padding_bottom = 0
+	vim.g.neovide_padding_right = 0
+	vim.g.neovide_padding_left = 0
+
+	vim.g.neovide_transparency = 0.95
+	vim.g.neovide_window_blurred = true
+
+	-- Copy/Paste using Ctrl+C & Ctrl+V
+	vim.keymap.set("n", "<D-s>", ":w<CR>") -- Save
+	vim.keymap.set("v", "<D-c>", '"+y') -- Copy
+	vim.keymap.set("n", "<D-v>", '"+P') -- Paste normal mode
+	vim.keymap.set("v", "<D-v>", '"+P') -- Paste visual mode
+	vim.keymap.set("c", "<D-v>", "<C-R>+") -- Paste command mode
+	vim.keymap.set("i", "<D-v>", '<ESC>l"+Pli') -- Paste insert mode
+end
+
+--* Terminal autocmd *--
+vim.api.nvim_create_autocmd({ "TermOpen", "BufEnter" }, {
+	callback = function()
+		local is_terminal = vim.api.nvim_get_option_value("buftype", { buf = 0 }) == "terminal"
+			or vim.api.nvim_get_option_value("buftype", { buf = 0 }) == "nofile"
+		vim.opt.number = not is_terminal
+		vim.opt.signcolumn = is_terminal and "no" or "yes"
+	end,
+})
 
 -- ====================================================================
 -- ============================ Plugins ===============================
@@ -35,22 +97,103 @@ vim.opt.scrolloff = 10
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    See `:help lazy.nvim.txt` or https://github.com/folke/lazy.nvim for more info
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
-if not vim.loop.fs_stat(lazypath) then
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
 	local lazyrepo = "https://github.com/folke/lazy.nvim.git"
-	vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
+	local out = vim.fn.system({ "git", "clone", "--filter=blob:none", "--branch=stable", lazyrepo, lazypath })
+	if vim.v.shell_error ~= 0 then
+		vim.api.nvim_echo({
+			{ "Failed to clone lazy.nvim:\n", "ErrorMsg" },
+			{ out, "WarningMsg" },
+			{ "\nPress any key to exit..." },
+		}, true, {})
+		vim.fn.getchar()
+		os.exit(1)
+	end
 end
 ---@diagnostic disable-next-line: undefined-field
 vim.opt.rtp:prepend(lazypath)
 
 require("lazy").setup({
-	{ -- catppuccin colorscheme.
-		"catppuccin/nvim",
-		name = "catppuccin",
-		priority = 1000,
+	{
+		"akinsho/toggleterm.nvim",
+		version = "*",
+		config = true,
+		opts = {
+			direction = "float",
+			persist_mode = true,
+			float_opts = {
+				border = "curved",
+				winblend = 3,
+			},
+		},
+	},
+	{
+		"goolord/alpha-nvim",
+		dependencies = { "nvim-tree/nvim-web-devicons" },
+		opts = {},
+		config = function()
+			require("alpha").setup(require("alpha.themes.startify").config)
+		end,
+	},
+	{ "echasnovski/mini.icons", version = false },
+	{ "shortcuts/no-neck-pain.nvim" },
+	{ "numToStr/Comment.nvim", opts = {} },
+	{ "MunifTanjim/nui.nvim", lazy = true },
+	{
+		"kylechui/nvim-surround",
+		version = "*", -- Use for stability; omit to use `main` branch for the latest features
+		event = "VeryLazy",
+		config = function()
+			require("nvim-surround").setup({
+				-- Configuration here, or leave empty to use defaults
+			})
+		end,
+	},
+	{
+		"projekt0n/github-nvim-theme",
+		lazy = false, -- make sure we load this during startup if it is your main colorscheme
+		priority = 1000, -- make sure to load this before all the other start plugins
+		config = function()
+			vim.cmd("colorscheme github_dark_default")
+		end,
+	},
+	{
+		"stevearc/dressing.nvim",
+		opts = {},
+	},
+	{
+		"nvim-neo-tree/neo-tree.nvim",
+		branch = "v3.x",
+		cmd = "Neotree",
+		config = function()
+			require("neo-tree").setup({
+				close_if_last_window = true,
+				enable_git_status = true,
+				filesystem = {
+					follow_current_file = {
+						enabled = true,
+						leave_dirs_opsn = true,
+					},
+				},
+				width = 20,
+				buffers = {
+					follow_current_file = {
+						enabled = true,
+						leave_dirs_opsn = false,
+					},
+					window = {
+						width = 20,
+					},
+				},
+			})
+		end,
 	},
 	{ -- Status line bar
 		"nvim-lualine/lualine.nvim",
-		opts = {},
+		opts = {
+			globalstatus = true,
+			winbar = {},
+		},
 	},
 	{ -- Highlight todo, notes, etc in comments
 		"folke/todo-comments.nvim",
@@ -65,7 +208,6 @@ require("lazy").setup({
 			require("which-key").setup()
 		end,
 	},
-	{ "ggandor/leap.nvim" },
 	{
 		"lewis6991/gitsigns.nvim",
 		opts = {
@@ -87,11 +229,19 @@ require("lazy").setup({
 			{ "nvim-tree/nvim-web-devicons", enabled = vim.g.have_nerd_font },
 		},
 		config = function()
+			local telescope = require("telescope")
 			local actions = require("telescope.actions")
-			require("telescope").setup({
+
+			telescope.setup({
 				defaults = {
+					sorting_strategy = "ascending",
+					layout_strategy = "horizontal",
+					layout_config = { prompt_position = "top" },
 					mappings = {
 						i = {
+							["<C-k>"] = actions.move_selection_previous, -- move to prev result
+							["<C-j>"] = actions.move_selection_next, -- move to next result
+							["<C-q>"] = actions.send_selected_to_qflist + actions.open_qflist, -- send selected to quickfixlist
 							["<esc>"] = actions.close,
 							["C-c"] = actions.close,
 						},
@@ -101,9 +251,19 @@ require("lazy").setup({
 					["ui-select"] = {
 						require("telescope.themes").get_dropdown(),
 					},
+					file_browser = {
+						path = "%:p:h", -- open from within the folder of your current buffer
+						display_stat = false, -- don't show file stat
+						grouped = true, -- group initial sorting by directories and then files
+						hidden = true, -- show hidden files
+						hide_parent_dir = true, -- hide `../` in the file browser
+						hijack_netrw = true, -- use telescope file browser when opening directory paths
+						prompt_path = true, -- show the current relative path from cwd as the prompt prefix
+						use_fd = true, -- use `fd` instead of plenary, make sure to install `fd`
+					},
 				},
 			})
-			pcall(require("telescope").load_extension, "ui-select")
+			pcall(telescope.load_extension, "ui-select")
 		end,
 	},
 	{ -- Autocompletion
@@ -196,10 +356,10 @@ require("lazy").setup({
 
 					map("gd", require("telescope.builtin").lsp_definitions, "[G]oto [D]efinition")
 					map("gr", require("telescope.builtin").lsp_references, "[G]oto [R]eferences")
-					map("gI", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
+					map("gD", require("telescope.builtin").lsp_implementations, "[G]oto [I]mplementation")
 					map("<leader>D", require("telescope.builtin").lsp_type_definitions, "Type [D]efinition")
 					map(
-						"<leader>fs",
+						"<C-s>",
 						require("telescope.builtin").lsp_dynamic_workspace_symbols,
 						"[F]ind Workspace [S]ymbol"
 					)
@@ -260,6 +420,7 @@ require("lazy").setup({
 			capabilities = vim.tbl_deep_extend("force", capabilities, require("cmp_nvim_lsp").default_capabilities())
 
 			local servers = {
+				terraformls = {},
 				gopls = {},
 				rust_analyzer = {},
 				lua_ls = {
@@ -278,7 +439,14 @@ require("lazy").setup({
 				},
 			}
 
-			require("mason").setup()
+			--* load LSP for the current filetype *--
+			local default_setup = function(server)
+				require("lspconfig")[server].setup({
+					capabilities = require("cmp_nvim_lsp").default_capabilities(),
+				})
+			end
+
+			require("mason").setup({ ui = { border = "rounded" } })
 
 			local ensure_installed = vim.tbl_keys(servers or {})
 			vim.list_extend(ensure_installed, {
@@ -288,33 +456,171 @@ require("lazy").setup({
 
 			require("mason-lspconfig").setup({
 				handlers = {
-					function(server_name)
-						local server = servers[server_name] or {}
-						-- This handles overriding only values explicitly passed
-						-- by the server configuration above. Useful when disabling
-						-- certain features of an LSP (for example, turning off formatting for tsserver)
-						server.capabilities = vim.tbl_deep_extend("force", {}, capabilities, server.capabilities or {})
-						require("lspconfig")[server_name].setup(server)
-					end,
+					default_setup,
 				},
 			})
+
+			local signs = { Error = "✘", Warn = "▲", Hint = "⚑", Info = "»" }
+			for type, icon in pairs(signs) do
+				local hl = "DiagnosticSign" .. type
+				vim.fn.sign_define(hl, { text = icon, texthl = hl, numhl = hl })
+			end
 		end,
 	},
 	{
 		"nvim-treesitter/nvim-treesitter",
 		build = ":TSUpdate",
+		init = function(plugin)
+			-- PERF: add nvim-treesitter queries to the rtp and it's custom query predicates early
+			-- This is needed because a bunch of plugins no longer `require("nvim-treesitter")`, which
+			-- no longer trigger the **nvim-treesitter** module to be loaded in time.
+			-- Luckily, the only things that those plugins need are the custom queries, which we make available
+			-- during startup.
+			require("lazy.core.loader").add_to_rtp(plugin)
+			require("nvim-treesitter.query_predicates")
+		end,
+		cmd = { "TSUpdateSync", "TSUpdate", "TSInstall" },
 		opts = {
-			ensure_installed = { "bash", "diff", "html", "lua", "markdown", "vim" },
-			auto_install = true,
-			highlight = {
-				enabled = true,
+			ensure_installed = {
+				"bash",
+				"diff",
+				"html",
+				"lua",
+				"markdown",
+				"vim",
+				"json",
+				"lua",
+				"yaml",
+				"go",
+				"gowork",
+				"gomod",
+				"svelte",
 			},
+			auto_install = true,
 			indent = { enable = true },
+			highlight = { enabled = true },
+			incremental_selection = {
+				enabled = false,
+			},
+			textobjects = {
+				select = {
+					-- Automatically jump forward to textobj, similar to targets.vim
+					lookahead = true,
+
+					enable = true,
+					keymaps = {
+						-- You can use the capture groups defined in textobjects.scm
+						["a="] = { query = "@assignment.outer", desc = "Select outer part of an assignment" },
+						["i="] = { query = "@assignment.inner", desc = "Select inner part of an assignment" },
+						["l="] = { query = "@assignment.lhs", desc = "Select left hand side of an assignment" },
+						["r="] = { query = "@assignment.rhs", desc = "Select right hand side of an assignment" },
+
+						["a:"] = { query = "@property.outer", desc = "Select outer part of an object property" },
+						["i:"] = { query = "@property.inner", desc = "Select inner part of an object property" },
+						["l:"] = { query = "@property.lhs", desc = "Select left part of an object property" },
+						["r:"] = { query = "@property.rhs", desc = "Select right part of an object property" },
+
+						["aa"] = { query = "@parameter.outer", desc = "Select outer part of a parameter/argument" },
+						["ia"] = { query = "@parameter.inner", desc = "Select inner part of a parameter/argument" },
+
+						["ai"] = { query = "@conditional.outer", desc = "Select outer part of a conditional" },
+						["ii"] = { query = "@conditional.inner", desc = "Select inner part of a conditional" },
+
+						["al"] = { query = "@loop.outer", desc = "Select outer part of a loop" },
+						["il"] = { query = "@loop.inner", desc = "Select inner part of a loop" },
+
+						["af"] = { query = "@call.outer", desc = "Select outer part of a function call" },
+						["if"] = { query = "@call.inner", desc = "Select inner part of a function call" },
+
+						["am"] = {
+							query = "@function.outer",
+							desc = "Select outer part of a method/function definition",
+						},
+						["im"] = {
+							query = "@function.inner",
+							desc = "Select inner part of a method/function definition",
+						},
+
+						["ac"] = { query = "@class.outer", desc = "Select outer part of a class" },
+						["ic"] = { query = "@class.inner", desc = "Select inner part of a class" },
+					},
+				},
+				swap = {
+					enable = true,
+					swap_next = {
+						["<leader>na"] = "@parameter.inner", -- swap parameters/argument with next
+						["<leader>n:"] = "@property.outer", -- swap object property with next
+						["<leader>nm"] = "@function.outer", -- swap function with next
+					},
+					swap_previous = {
+						["<leader>pa"] = "@parameter.inner", -- swap parameters/argument with prev
+						["<leader>p:"] = "@property.outer", -- swap object property with prev
+						["<leader>pm"] = "@function.outer", -- swap function with previous
+					},
+				},
+				move = {
+					enable = true,
+					set_jumps = true, -- whether to set jumps in the jumplist
+					goto_next_start = {
+						["]f"] = { query = "@call.outer", desc = "Next function call start" },
+						["]m"] = { query = "@function.outer", desc = "Next method/function def start" },
+						["]c"] = { query = "@class.outer", desc = "Next class start" },
+						["]i"] = { query = "@conditional.outer", desc = "Next conditional start" },
+						["]l"] = { query = "@loop.outer", desc = "Next loop start" },
+
+						-- You can pass a query group to use query from `queries/<lang>/<query_group>.scm file in your runtime path.
+						-- Below example nvim-treesitter's `locals.scm` and `folds.scm`. They also provide highlights.scm and indent.scm.
+						["]s"] = { query = "@scope", query_group = "locals", desc = "Next scope" },
+						["]z"] = { query = "@fold", query_group = "folds", desc = "Next fold" },
+					},
+					goto_next_end = {
+						["]F"] = { query = "@call.outer", desc = "Next function call end" },
+						["]M"] = { query = "@function.outer", desc = "Next method/function def end" },
+						["]C"] = { query = "@class.outer", desc = "Next class end" },
+						["]I"] = { query = "@conditional.outer", desc = "Next conditional end" },
+						["]L"] = { query = "@loop.outer", desc = "Next loop end" },
+					},
+					goto_previous_start = {
+						["[f"] = { query = "@call.outer", desc = "Prev function call start" },
+						["[m"] = { query = "@function.outer", desc = "Prev method/function def start" },
+						["[c"] = { query = "@class.outer", desc = "Prev class start" },
+						["[i"] = { query = "@conditional.outer", desc = "Prev conditional start" },
+						["[l"] = { query = "@loop.outer", desc = "Prev loop start" },
+					},
+					goto_previous_end = {
+						["[F"] = { query = "@call.outer", desc = "Prev function call end" },
+						["[M"] = { query = "@function.outer", desc = "Prev method/function def end" },
+						["[C"] = { query = "@class.outer", desc = "Prev class end" },
+						["[I"] = { query = "@conditional.outer", desc = "Prev conditional end" },
+						["[L"] = { query = "@loop.outer", desc = "Prev loop end" },
+					},
+				},
+			},
+
+			-- textobjects = {
+			-- 	enable = true,
+			-- 	select = {
+			-- 		enable = true,
+			-- 		lookahead = true,
+			-- 	},
+			-- 	move = {
+			-- 		enabled = true,
+			-- 	},
+			-- },
 		},
 		config = function(_, opts)
 			require("nvim-treesitter.install").prefer_git = true
 			require("nvim-treesitter.configs").setup(opts)
+			vim.cmd([[TSEnable highlight]])
 		end,
+		keys = {
+			{ "<c-space>", desc = "Increment Selection" },
+			{ "<bs>", desc = "Decrement Selection", mode = "x" },
+		},
+	},
+	{
+		"nvim-treesitter/nvim-treesitter-textobjects",
+		enabled = true,
 	},
 	{
 		"ray-x/go.nvim",
@@ -364,7 +670,6 @@ require("lazy").setup({
 		},
 	},
 })
-require("leap").create_default_mappings()
 
 -- ====================================================================
 -- =========================== Auto Commands ==========================
@@ -390,18 +695,22 @@ vim.api.nvim_create_autocmd("BufWritePre", {
 	group = format_sync_grp,
 })
 
-vim.cmd.colorscheme("catppuccin-mocha")
-
 -- ====================================================================
 -- ====================== Basic Key bindings ==========================
 -- ====================================================================
 vim.keymap.set("n", "<leader><cr>", "<cmd>nohlsearch<CR>")
 vim.keymap.set("n", "<leader>bd", "<cmd>bdelete<CR>")
+vim.keymap.set("n", "<leader>gt", "<cmd>GoAddTag<CR>")
+vim.keymap.set("n", "<leader>fe", "<cmd>Neotree<CR>")
+vim.keymap.set("n", "<leader>gT", "<cmd>GoTestPkg<CR>")
+vim.keymap.set("n", "<C-\\>", "<cmd>ToggleTerm<CR>")
 
 -- Telescope related key bindings.
 local ts_builtin = require("telescope.builtin")
-vim.keymap.set("n", "<leader>f", ts_builtin.find_files, { desc = "[F]ind: [F]iles" })
-vim.keymap.set("n", "<leader>bf", ts_builtin.buffers, { desc = "[F]ind: [B]uffers" })
+vim.keymap.set("n", "<leader>fc", ts_builtin.commands, { desc = "[F]ind using [G]rep" })
+vim.keymap.set("n", "<space>", ts_builtin.live_grep, { desc = "[F]ind using [G]rep" })
+vim.keymap.set("n", "<leader>ff", ts_builtin.find_files, { desc = "[F]ind: [F]iles" })
+vim.keymap.set("n", "<leader>fb", ts_builtin.buffers, { desc = "[F]ind: [B]uffers" })
 vim.keymap.set("n", "<leader>fd", ts_builtin.diagnostics, { desc = "[F]ind: [d]iagnostics" })
 vim.keymap.set("n", "<leader>fr", ts_builtin.oldfiles, { desc = "[F]ind: [r]ecent files" })
 
